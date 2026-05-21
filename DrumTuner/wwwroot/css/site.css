@@ -1,0 +1,370 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    min-height: 100vh;
+}
+
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: #16213e;
+    border-bottom: 2px solid #0f3460;
+}
+
+.nav-brand {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #e94560;
+}
+
+.nav-links {
+    display: flex;
+    gap: 8px;
+}
+
+.nav-btn {
+    background: transparent;
+    border: 1px solid #0f3460;
+    color: #e0e0e0;
+    padding: 8px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+.nav-btn:hover {
+    background: #0f3460;
+}
+
+.nav-btn.active {
+    background: #e94560;
+    border-color: #e94560;
+    color: white;
+}
+
+main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+/* Drum Selector */
+.drum-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+}
+
+.drum-card {
+    background: #16213e;
+    border: 2px solid #0f3460;
+    border-radius: 12px;
+    padding: 28px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+}
+
+.drum-card:hover {
+    border-color: #e94560;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(233, 69, 96, 0.2);
+}
+
+.drum-card-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+}
+
+.drum-card-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.drum-card-info {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+/* Drum Visualizer */
+.visualizer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.visualizer-title h2 {
+    font-size: 1.5rem;
+    color: #e94560;
+}
+
+.visualizer-title p {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.visualizer-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    padding: 8px 18px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: #e94560;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #c73a52;
+}
+
+.btn-secondary {
+    background: #0f3460;
+    color: #e0e0e0;
+}
+
+.btn-secondary:hover {
+    background: #1a4a8a;
+}
+
+.drum-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 30px 0;
+}
+
+#drumCanvas {
+    border-radius: 50%;
+}
+
+/* Note Selector Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal {
+    background: #16213e;
+    border: 2px solid #0f3460;
+    border-radius: 12px;
+    padding: 24px;
+    min-width: 380px;
+    max-width: 95vw;
+}
+
+.modal h3 {
+    margin-bottom: 16px;
+    color: #e94560;
+}
+
+.note-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.note-btn {
+    padding: 12px 8px;
+    background: #0f3460;
+    border: 1px solid #1a4a8a;
+    color: #e0e0e0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.15s;
+}
+
+.note-btn:hover {
+    background: #e94560;
+    border-color: #e94560;
+}
+
+.note-btn.selected {
+    background: #e94560;
+    border-color: #e94560;
+}
+
+/* Tuning Guide */
+.guide-panel {
+    background: #16213e;
+    border: 2px solid #0f3460;
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 24px;
+}
+
+.guide-panel h3 {
+    color: #e94560;
+    margin-bottom: 16px;
+}
+
+.pattern-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pattern-item {
+    background: #0f3460;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.pattern-item h4 {
+    color: #e94560;
+    margin-bottom: 8px;
+}
+
+.pattern-item p {
+    color: #aaa;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+}
+
+.pattern-diagram {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.pattern-lug {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: #1a1a2e;
+    border: 2px solid #333;
+}
+
+.pattern-lug.highlight {
+    background: #e94560;
+    border-color: #e94560;
+}
+
+/* Journal */
+.journal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.journal-item {
+    background: #16213e;
+    border: 2px solid #0f3460;
+    border-radius: 10px;
+    padding: 18px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.journal-item:hover {
+    border-color: #e94560;
+}
+
+.journal-info h4 {
+    margin-bottom: 4px;
+}
+
+.journal-info p {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+/* Save Session */
+.save-section {
+    background: #16213e;
+    border: 2px solid #0f3460;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 24px;
+}
+
+.save-section h3 {
+    color: #e94560;
+    margin-bottom: 12px;
+}
+
+.save-section textarea {
+    width: 100%;
+    background: #0f3460;
+    border: 1px solid #1a4a8a;
+    color: #e0e0e0;
+    padding: 10px;
+    border-radius: 6px;
+    resize: vertical;
+    min-height: 60px;
+    font-family: inherit;
+}
+
+/* Progress indicator */
+.progress-bar {
+    height: 4px;
+    background: #0f3460;
+    border-radius: 2px;
+    margin-top: 12px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #e94560;
+    transition: width 0.3s;
+}
+
+/* Lug status colors */
+.lug-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 0.9rem;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-dot.tuned {
+    background: #4ade80;
+}
+
+.status-dot.untuned {
+    background: #666;
+}
