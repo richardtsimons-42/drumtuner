@@ -27,9 +27,12 @@ const tuningGuide = {
             { name: 'Octave Reference', notes: ['C3', 'C4', 'C5', 'C6', 'C7'], desc: 'All C notes across the piano range' }
         ],
         'Drums': [
-            { name: 'Standard Snare', notes: ['D3'], desc: 'Common snare drum pitch, medium tension' },
-            { name: 'Low Tom Tuning', notes: ['C2', 'G1', 'C2'], desc: 'Toms tuned in descending intervals' },
-            { name: 'High Tom Tuning', notes: ['F3', 'C3', 'G2'], desc: 'Rack toms tuned higher for brighter sound' }
+            { name: 'Snare — Standard', notes: ['12 o\'c'], desc: 'Center lug at top, tune in star pattern (opposite lugs) for even tension' },
+            { name: 'Snare — Low & Loose', notes: ['Lower 4th'], desc: 'Tune snare a 4th lower for a deeper, fatter sound. Loosen batter head more.' },
+            { name: 'Rack Tom — Standard', notes: ['C3, G2, D2'], desc: 'Typical rack tom range. Tuned in descending 4ths between toms (rack higher than floor).' },
+            { name: 'Floor Tom — Standard', notes: ['G1, D1'], desc: 'Tuned a 4th or 5th below the rack tom for smooth pitch descent.' },
+            { name: 'Bass Drum — Standard', notes: ['C2'], desc: 'Common bass drum fundamental. Punch a hole in resonant head to reduce low end.' },
+            { name: 'Tom Tuning Pattern', notes: ['Lug star'], desc: 'Always tune lugs in opposite pairs (star pattern). 12 o\'c → 6 o\'c → 3 → 9 → etc.' }
         ],
         'Percussion': [
             { name: 'Timpani Ranges', notes: ['C2', 'G2', 'C3', 'G3'], desc: 'Common timpani tuning intervals' },
