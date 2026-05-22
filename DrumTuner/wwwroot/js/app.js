@@ -8,7 +8,6 @@ const app = {
     lastPitch: null,
 
     async init() {
-        await tonePlayer.loadFrequencies();
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.onclick = () => this.navigate(btn.dataset.page);
         });
@@ -24,9 +23,6 @@ const app = {
         switch (page) {
             case 'selector':
                 instrumentSelector.init();
-                break;
-            case 'journal':
-                journal.init();
                 break;
         }
     },
@@ -48,15 +44,11 @@ const app = {
 
         // Build the view based on category
         const isPiano = data.category === 'Piano';
-        const isStringed = ['Guitar', 'Bass', 'Strings', 'Other'].includes(data.category);
 
         let visualizerHtml = '';
         if (isPiano) {
             pianoVisualizer.init(data.id, data.defaultNotes);
             visualizerHtml = `<div id="pianoContainer">${pianoVisualizer.render()}</div>`;
-        } else if (isStringed) {
-            stringVisualizer.init(data.id, data.stringCount, data.defaultNotes);
-            visualizerHtml = stringVisualizer.render();
         }
 
         document.getElementById('app').innerHTML = `
@@ -72,9 +64,7 @@ const app = {
                 </div>
                 <div class="visualizer-actions">
                     <button class="btn btn-primary" id="tuneBtn" onclick="app.toggleTuneMode()">🎤 Tune</button>
-                    <button class="btn btn-secondary" onclick="app.playReferenceTone()" title="Play reference tone for each string">🔊 Play Tone</button>
                     <button class="btn btn-secondary" onclick="app.showGuide()">📖 Guide</button>
-                    <button class="btn btn-secondary" onclick="app.saveSession()">💾 Save</button>
                     <button class="btn btn-secondary" onclick="app.goHome()">← Back</button>
                 </div>
             </div>
@@ -95,11 +85,19 @@ const app = {
     },
 
     updateProgress() {
-        const strings = stringVisualizer.getStrings();
-        if (!strings) return;
-        const tuned = strings.filter(s => s.currentNote !== null).length;
-        const total = strings.length;
-        const pct = (tuned / total * 100);
+        const pianoContainer = document.getElementById('pianoContainer');
+        if (!pianoContainer) return;
+
+        const whiteKeys = pianoContainer.querySelectorAll('.white-key');
+        let tuned = 0;
+        let total = whiteKeys.length;
+
+        whiteKeys.forEach(key => {
+            const info = pianoVisualizer.activeKeys?.[key.dataset.note];
+            if (info && info.isDetected) tuned++;
+        });
+
+        const pct = total > 0 ? (tuned / total * 100) : 0;
 
         const statusText = document.querySelectorAll('.lug-status span')[1];
         const progressFill = document.querySelector('.progress-fill');
@@ -121,44 +119,6 @@ const app = {
         guideDiv.className = 'guide-panel';
         guideDiv.innerHTML = tuningGuide.render(this.currentCategory);
         document.querySelector('.instrument-container').after(guideDiv);
-    },
-
-    async saveSession() {
-        const notes = prompt('Add notes for this session (optional):');
-        if (notes === null) return;
-
-        let records = [];
-        if (stringVisualizer.getInstrumentId()) {
-            records = stringVisualizer.getStrings().map(s => ({ position: s.index + 1, note: s.targetNote }));
-        } else if (window.lugs) {
-            records = window.lugs.filter(l => l.tunedNote).map(l => ({ position: l.position, note: l.tunedNote }));
-        }
-
-        if (records.length === 0) {
-            alert('No strings tuned yet!');
-            return;
-        }
-
-        try {
-            await apiClient.saveSession(this.currentInstrumentTypeId, records, notes);
-            alert('Session saved!');
-        } catch (e) {
-            alert('Failed to save: ' + e.message);
-        }
-    },
-
-    async playReferenceTone() {
-        if (!window.lugs || window.lugs.length === 0) return;
-
-        for (let i = 0; i < window.lugs.length; i++) {
-            const lug = window.lugs[i];
-            if (i > 0) await new Promise(r => setTimeout(r, 400));
-            if (lug.tunedNote) {
-                await tonePlayer.playNote(lug.tunedNote, 1.5);
-            } else {
-                await tonePlayer.playSilence();
-            }
-        }
     },
 
     async toggleTuneMode() {
@@ -191,30 +151,6 @@ const app = {
         pitchDetector.listen((pitch) => {
             this.lastPitch = pitch;
 
-            // Update string visualizer
-            if (stringVisualizer.getInstrumentId()) {
-                stringVisualizer.updateFromPitch(pitch);
-                const container = document.getElementById('pianoContainer');
-                if (!container) {
-                    const svDiv = document.createElement('div');
-                    svDiv.id = 'stringContainer';
-                    svDiv.className = 'instrument-visualizer';
-                    document.querySelector('.instrument-container').appendChild(svDiv);
-                }
-                const sc = document.getElementById('stringContainer') || document.createElement('div');
-                if (!document.getElementById('stringContainer')) {
-                    const newSc = document.createElement('div');
-                    newSc.id = 'stringContainer';
-                    newSc.className = 'instrument-visualizer';
-                    document.querySelector('.instrument-container').appendChild(newSc);
-                }
-                // Re-render string visualizer in place
-                const existingSc = document.getElementById('stringContainer');
-                if (existingSc) {
-                    existingSc.innerHTML = stringVisualizer.render();
-                }
-            }
-
             // Update piano visualizer
             if (pianoVisualizer.getInstrumentId()) {
                 pianoVisualizer.updateFromPitch(pitch);
@@ -225,7 +161,6 @@ const app = {
             }
 
             this.updateTunerUI(pitch);
-            this.updateProgress();
         });
     },
 
@@ -247,7 +182,6 @@ const app = {
         this.lastPitch = null;
 
         // Reset visualizers
-        stringVisualizer.resetPitch();
         pianoVisualizer.resetUndetected();
     },
 
