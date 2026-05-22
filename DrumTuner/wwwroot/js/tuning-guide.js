@@ -51,14 +51,14 @@ const tuningGuide = {
         return map[color] || '';
     },
 
-    playLug(position) {
+    async playLug(position) {
         // Play a reference tone for the next lug in sequence
         const currentLugs = drumVisualizer.lugs;
         if (currentLugs && currentLugs[position - 1]) {
             const note = currentLugs[position - 1].tunedNote || 'D3';
-            tonePlayer.playNote(note);
+            await tonePlayer.playNote(note);
         } else {
-            tonePlayer.playNote('D3');
+            await tonePlayer.playNote('D3');
         }
     },
 

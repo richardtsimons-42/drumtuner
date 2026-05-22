@@ -1,6 +1,6 @@
 // Drum Selector Page
 const drumSelector = {
-    iconMap: { 'Snare': '🥁', 'Tom': '🪘', 'Kick': '🔊' },
+    iconMap: { 'Snare': '🥁', 'Tom': '🪘', 'Kick': '🔊', 'Guitar': '🎸', 'Bass': '🎸', 'Strings': '🎻', 'Other': '🎵' },
 
     async render() {
         const types = await apiClient.getDrumTypes();

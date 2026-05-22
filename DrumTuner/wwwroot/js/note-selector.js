@@ -26,10 +26,8 @@ const noteSelector = {
             const btn = document.createElement('button');
             btn.className = 'note-btn' + (note === currentNote ? ' selected' : '');
             btn.textContent = note;
-            btn.onclick = () => {
-                tonePlayer.playNote(note);
-            };
-            btn.ondblclick = () => {
+            btn.onclick = async () => {
+                await tonePlayer.playNote(note);
                 this.callback(note);
                 this.close();
             };

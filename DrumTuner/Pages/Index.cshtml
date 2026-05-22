@@ -24,12 +24,22 @@
         <!-- Content injected by JS -->
     </main>
 
+    <script>
+        // Initialize AudioContext on first user gesture (required by browsers)
+        document.addEventListener('click', function initAudioOnce() {
+            if (!window.tonePlayer || !window.tonePlayer.initAudio) return;
+            window.tonePlayer.initAudio();
+            document.removeEventListener('click', initAudioOnce);
+        }, { once: true });
+    </script>
+
     <script src="~/js/tone-player.js"></script>
     <script src="~/js/api-client.js"></script>
     <script src="~/js/drum-selector.js"></script>
     <script src="~/js/note-selector.js"></script>
     <script src="~/js/tuning-guide.js"></script>
     <script src="~/js/journal.js"></script>
+    <script src="~/js/pitch-detector.js"></script>
     <script src="~/js/app.js"></script>
 </body>
 </html>

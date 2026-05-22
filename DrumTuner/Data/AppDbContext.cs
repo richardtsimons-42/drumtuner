@@ -50,10 +50,23 @@ public class AppDbContext : DbContext
 
         // Seed drum type presets
         modelBuilder.Entity<DrumType>().HasData(
+            // Drums
             new DrumType { Id = 1, Name = "Standard Snare", Category = "Snare", LugCount = 8, DefaultNote = "D3" },
             new DrumType { Id = 2, Name = "Rack Tom", Category = "Tom", LugCount = 6, DefaultNote = "C3" },
             new DrumType { Id = 3, Name = "Floor Tom", Category = "Tom", LugCount = 8, DefaultNote = "G2" },
-            new DrumType { Id = 4, Name = "Bass Drum", Category = "Kick", LugCount = 6, DefaultNote = "C2" }
+            new DrumType { Id = 4, Name = "Bass Drum", Category = "Kick", LugCount = 6, DefaultNote = "C2" },
+            // Guitars
+            new DrumType { Id = 5, Name = "Acoustic Guitar", Category = "Guitar", LugCount = 6, DefaultNote = "E2" },
+            new DrumType { Id = 6, Name = "Electric Guitar", Category = "Guitar", LugCount = 6, DefaultNote = "E2" },
+            // Bass
+            new DrumType { Id = 7, Name = "4-String Bass", Category = "Bass", LugCount = 4, DefaultNote = "E1" },
+            new DrumType { Id = 8, Name = "5-String Bass", Category = "Bass", LugCount = 5, DefaultNote = "B0" },
+            // Strings
+            new DrumType { Id = 9, Name = "Violin", Category = "Strings", LugCount = 4, DefaultNote = "G3" },
+            new DrumType { Id = 10, Name = "Cello", Category = "Strings", LugCount = 4, DefaultNote = "C2" },
+            new DrumType { Id = 11, Name = "Mandolin", Category = "Strings", LugCount = 8, DefaultNote = "G3" },
+            // Other
+            new DrumType { Id = 12, Name = "Ukulele", Category = "Other", LugCount = 4, DefaultNote = "G4" }
         );
     }
 }

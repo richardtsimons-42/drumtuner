@@ -2,6 +2,8 @@
 const app = {
     currentPage: 'selector',
     currentDrumId: null,
+    isTuningMode: false,
+    lastPitch: null,
 
     async init() {
         await tonePlayer.loadFrequencies();
@@ -49,6 +51,8 @@ const app = {
                     <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
                 </div>
                 <div class="visualizer-actions">
+                    <button class="btn btn-primary" id="tuneBtn" onclick="app.toggleTuneMode()">🎤 Tune</button>
+                    <button class="btn btn-secondary" onclick="app.playReferenceTone()" title="Play reference tone for each lug">🔊 Play Tone</button>
                     <button class="btn btn-secondary" onclick="app.showGuide()">📖 Guide</button>
                     <button class="btn btn-secondary" onclick="app.saveSession()">💾 Save</button>
                     <button class="btn btn-secondary" onclick="app.goHome()">← Back</button>
@@ -56,6 +60,15 @@ const app = {
             </div>
             <div class="drum-container">
                 <canvas id="drumCanvas" width="400" height="400"></canvas>
+                <div id="tunerGauge" class="tuner-gauge" style="display:none">
+                    <div class="tuner-status" id="tunerStatus">Listening...</div>
+                    <div class="tuner-note" id="tunerNote">--</div>
+                    <div class="tuner-freq" id="tunerFreq">-- Hz</div>
+                    <div class="tuner-bar">
+                        <div class="tuner-needle" id="tunerNeedle"></div>
+                    </div>
+                    <div class="tuner-cents" id="tunerCents">-- ¢</div>
+                </div>
             </div>
         `;
 
@@ -127,12 +140,12 @@ const app = {
         });
 
         // Click handler
-        canvas.onclick = (e) => {
+        canvas.onclick = async (e) => {
             const rect = canvas.getBoundingClientRect();
             const mx = e.clientX - rect.left;
             const my = e.clientY - rect.top;
 
-            lugs.forEach(lug => {
+            for (const lug of lugs) {
                 const idx = lug.position - 1;
                 const angle = (Math.PI * 2 * idx) / count - Math.PI / 2;
                 const lx = cx + (r - 10) * Math.cos(angle);
@@ -140,9 +153,17 @@ const app = {
                 const dist = Math.hypot(mx - lx, my - ly);
 
                 if (dist < 22) {
-                    this.showNoteSelector(lug);
+                    if (app.isTuningMode && app.lastPitch && app.lastPitch.isDetected) {
+                        // In tuning mode: assign detected note to this lug
+                        lug.tunedNote = app.lastPitch.note;
+                        this.drawDrum();
+                    } else if (lug.tunedNote) {
+                        await tonePlayer.playNote(lug.tunedNote);
+                    } else {
+                        this.showNoteSelector(lug);
+                    }
                 }
-            });
+            }
         };
 
         this.updateProgress();
@@ -216,6 +237,116 @@ const app = {
             alert('Session saved!');
         } catch (e) {
             alert('Failed to save: ' + e.message);
+        }
+    },
+
+    async playReferenceTone() {
+        if (!window.lugs || window.lugs.length === 0) {
+            alert('No drum loaded!');
+            return;
+        }
+
+        // Play each lug's note in sequence
+        for (let i = 0; i < window.lugs.length; i++) {
+            const lug = window.lugs[i];
+            if (i > 0) await new Promise(r => setTimeout(r, 400));
+
+            if (lug.tunedNote) {
+                await tonePlayer.playNote(lug.tunedNote, 0.6);
+            } else {
+                await tonePlayer.playSilence();
+            }
+        }
+    },
+
+    async toggleTuneMode() {
+        if (this.isTuningMode) {
+            this.stopTuneMode();
+        } else {
+            await this.startTuneMode();
+        }
+    },
+
+    async startTuneMode() {
+        try {
+            await pitchDetector.start();
+        } catch (e) {
+            alert(e.message);
+            return;
+        }
+
+        this.isTuningMode = true;
+        const tuneBtn = document.getElementById('tuneBtn');
+        if (tuneBtn) {
+            tuneBtn.textContent = '🔇 Stop';
+            tuneBtn.classList.remove('btn-primary');
+            tuneBtn.classList.add('btn-secondary');
+        }
+
+        const gauge = document.getElementById('tunerGauge');
+        if (gauge) gauge.style.display = 'block';
+
+        // Start the pitch processing loop
+        pitchDetector.listen((pitch) => {
+            this.lastPitch = pitch;
+            this.updateTunerUI(pitch);
+        });
+    },
+
+    stopTuneMode() {
+        this.isTuningMode = false;
+        pitchDetector.stopListening();
+        pitchDetector.stop();
+
+        const tuneBtn = document.getElementById('tuneBtn');
+        if (tuneBtn) {
+            tuneBtn.textContent = '🎤 Tune';
+            tuneBtn.classList.remove('btn-secondary');
+            tuneBtn.classList.add('btn-primary');
+        }
+
+        const gauge = document.getElementById('tunerGauge');
+        if (gauge) gauge.style.display = 'none';
+
+        this.lastPitch = null;
+    },
+
+    updateTunerUI(pitch) {
+        const noteEl = document.getElementById('tunerNote');
+        const freqEl = document.getElementById('tunerFreq');
+        const centsEl = document.getElementById('tunerCents');
+        const needleEl = document.getElementById('tunerNeedle');
+        const statusEl = document.getElementById('tunerStatus');
+
+        if (!pitch || !pitch.isDetected) {
+            statusEl.textContent = 'No signal — hit the drum!';
+            noteEl.textContent = '--';
+            freqEl.textContent = '-- Hz';
+            centsEl.textContent = '-- ¢';
+            centsEl.style.color = '#666';
+            if (needleEl) needleEl.style.left = '50%';
+            return;
+        }
+
+        statusEl.textContent = `Lug: ${pitch.note} (${pitch.frequency} Hz)`;
+        noteEl.textContent = pitch.note;
+        freqEl.textContent = `${pitch.frequency} Hz`;
+
+        // Cents display with color coding
+        const absCents = Math.abs(pitch.cents);
+        centsEl.textContent = `${pitch.cents > 0 ? '+' : ''}${pitch.cents} ¢`;
+        if (absCents <= 5) {
+            centsEl.style.color = '#4ade80'; // green — in tune
+        } else if (absCents <= 20) {
+            centsEl.style.color = '#facc15'; // yellow — close
+        } else {
+            centsEl.style.color = '#ef4444'; // red — far off
+        }
+
+        // Needle position: -50¢ = left edge, 0 = center, +50¢ = right edge
+        if (needleEl) {
+            const pct = Math.max(0, Math.min(100, 50 + pitch.cents));
+            needleEl.style.left = `${pct}%`;
         }
     },
 

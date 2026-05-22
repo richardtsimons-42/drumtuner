@@ -368,3 +368,79 @@ main {
 .status-dot.untuned {
     background: #666;
 }
+
+/* Pitch Tuner Gauge */
+.tuner-gauge {
+    text-align: center;
+    margin-top: 20px;
+    padding: 16px;
+    background: #16213e;
+    border: 2px solid #0f3460;
+    border-radius: 12px;
+}
+
+.tuner-status {
+    color: #888;
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+}
+
+.tuner-note {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #e94560;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.tuner-freq {
+    color: #aaa;
+    font-size: 1rem;
+    margin-bottom: 12px;
+}
+
+.tuner-bar {
+    position: relative;
+    height: 8px;
+    background: #0f3460;
+    border-radius: 4px;
+    margin: 12px auto;
+    max-width: 300px;
+    overflow: visible;
+}
+
+.tuner-bar::before,
+.tuner-bar::after {
+    content: '';
+    position: absolute;
+    top: -6px;
+    width: 2px;
+    height: 20px;
+    background: #333;
+}
+
+.tuner-bar::before {
+    left: 0;
+}
+
+.tuner-bar::after {
+    right: 0;
+}
+
+.tuner-needle {
+    position: absolute;
+    top: -8px;
+    width: 4px;
+    height: 24px;
+    background: #e94560;
+    border-radius: 2px;
+    transform: translateX(-50%);
+    transition: left 0.1s ease-out;
+}
+
+.tuner-cents {
+    font-size: 0.9rem;
+    margin-top: 8px;
+    color: #666;
+    font-weight: 600;
+}
