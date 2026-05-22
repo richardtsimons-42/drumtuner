@@ -1,4 +1,4 @@
-// Instrument Selector Page — category-based instrument picker
+// Instrument Selector Page — category-based instrument picker + drums
 const instrumentSelector = {
     iconMap: {
         'Guitar': '🎸',
@@ -11,11 +11,14 @@ const instrumentSelector = {
     },
 
     async render() {
-        const types = await apiClient.getInstrumentTypes();
+        const [instrumentTypes, drumTypes] = await Promise.all([
+            apiClient.getInstrumentTypes(),
+            apiClient.getDrumTypes()
+        ]);
 
-        // Group by category
+        // Group instruments by category
         const groups = {};
-        types.forEach(t => {
+        instrumentTypes.forEach(t => {
             if (!groups[t.category]) groups[t.category] = [];
             groups[t.category].push(t);
         });
@@ -38,6 +41,23 @@ const instrumentSelector = {
                         <div class="instrument-card-info">${t.stringCount} strings · ${notes}</div>
                     </div>`;
             }
+
+            html += `</div></div>`;
+        }
+
+        // Add drums section
+        if (drumTypes && drumTypes.length > 0) {
+            const iconMap = { 'Snare': '🥁', 'Tom': '🪘', 'Kick': '🔊' };
+            html += `<div class="selector-category"><h3>🥁 Drums</h3><div class="instrument-grid">`;
+
+            drumTypes.forEach(t => {
+                html += `
+                    <div class="instrument-card" onclick="app.selectDrum(${t.id})">
+                        <div class="instrument-card-icon">${iconMap[t.category] || '🥁'}</div>
+                        <div class="instrument-card-name">${t.name}</div>
+                        <div class="instrument-card-info">${t.lugCount} lugs · ${t.defaultNote}</div>
+                    </div>`;
+            });
 
             html += `</div></div>`;
         }

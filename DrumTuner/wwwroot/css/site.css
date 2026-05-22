@@ -343,6 +343,15 @@ main {
     z-index: 1;
 }
 
+.piano-key.selected-key {
+    box-shadow: 0 0 0 3px #e94560, 0 0 12px rgba(233, 69, 96, 0.4);
+    z-index: 2;
+}
+
+.white-key.selected-key {
+    border-color: #e94560 !important;
+}
+
 /* ── Tuner Gauge ────────────────────────────────── */
 .tuner-gauge {
     text-align: center;

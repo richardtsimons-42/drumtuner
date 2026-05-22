@@ -84,6 +84,66 @@ const app = {
         this.updateProgress();
     },
 
+    async selectDrum(drumTypeId) {
+        const data = await apiClient.instantiateDrum(drumTypeId);
+        this.currentInstrumentId = data.id;
+        this.currentInstrumentTypeId = data.drumTypeId;
+        this.currentCategory = data.category;
+        window.currentInstrument = data;
+        window.lugs = Array.from(data.lugs).map(l => ({
+            id: l.id,
+            position: l.position,
+            tunedNote: l.tunedNote || null
+        }));
+
+        // Set pitch detector mode for drum category (use default note range)
+        const drumType = await apiClient.getDrumTypes();
+        const type = drumType.find(d => d.id === data.drumTypeId);
+        if (type) {
+            pitchDetector.setInstrumentMode(type.category, 60, 200);
+        }
+
+        document.getElementById('app').innerHTML = `
+            <div class="visualizer-header">
+                <div class="visualizer-title">
+                    <h2>${data.name}</h2>
+                    <p>${data.category} · ${window.lugs.length} lugs</p>
+                    <div class="lug-status">
+                        <span class="status-dot untuned"></span>
+                        <span></span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+                </div>
+                <div class="visualizer-actions">
+                    <button class="btn btn-primary" id="tuneBtn" onclick="app.toggleTuneMode()">🎤 Tune</button>
+                    <button class="btn btn-secondary" onclick="app.showGuide()">📖 Guide</button>
+                    <button class="btn btn-secondary" onclick="app.goHome()">← Back</button>
+                </div>
+            </div>
+            <div class="instrument-container">
+                <div class="lug-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:500px;width:100%">
+                    ${window.lugs.map(l => `
+                        <div class="lug-card" data-lug-id="${l.id}" onclick="app.selectLug(${l.id})">
+                            <div class="lug-position">#${l.position}</div>
+                            <div class="lug-note">${l.tunedNote || '—'}</div>
+                            <div class="lug-status-dot untuned"></div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div id="tunerGauge" class="tuner-gauge" style="display:none">
+                    <div class="tuner-status" id="tunerStatus">Listening...</div>
+                    <div class="tuner-note" id="tunerNote">--</div>
+                    <div class="tuner-freq" id="tunerFreq">-- Hz</div>
+                    <div class="tuner-bar">
+                        <div class="tuner-needle" id="tunerNeedle"></div>
+                    </div>
+                    <div class="tuner-cents" id="tunerCents">-- ¢</div>
+                </div>
+            </div>`;
+
+        this.updateProgress();
+    },
+
     updateProgress() {
         const pianoContainer = document.getElementById('pianoContainer');
         if (!pianoContainer) return;
@@ -154,8 +214,6 @@ const app = {
             // Update piano visualizer
             if (pianoVisualizer.getInstrumentId()) {
                 pianoVisualizer.updateFromPitch(pitch);
-                const pc = document.getElementById('pianoContainer');
-                if (pc) pc.innerHTML = pianoVisualizer.render();
             } else {
                 pianoVisualizer.resetUndetected();
             }
