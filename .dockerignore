@@ -1,0 +1,11 @@
+**/node_modules/
+**/obj/
+**/bin/
+**/*.db
+**/*.db-wal
+**/*.db-shm
+.git/
+.gitignore
+*.suo
+*.user
+.vs/

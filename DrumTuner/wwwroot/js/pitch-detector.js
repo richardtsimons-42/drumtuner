@@ -8,6 +8,15 @@ const pitchDetector = {
     rafId: null,
     onTick: null, // callback(data) called every frame during listening
 
+    // Instrument-specific configuration
+    config: {
+        minFreq: 40,      // Default minimum frequency
+        maxFreq: 5000,    // Default maximum frequency
+        filterCutoff: 5000, // Filter cutoff for preprocessing
+        smoothing: 0.7,     // Smoothing factor
+        sensitivityThreshold: 0.01 // Minimum RMS to detect signal
+    },
+
     async start() {
         try {
             this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -20,10 +29,10 @@ const pitchDetector = {
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
 
-        // Create a low-pass filter to focus on the fundamental frequency of drums
+        // Create a low-pass filter to focus on the fundamental frequency
         this.filterNode = this.audioContext.createBiquadFilter();
         this.filterNode.type = 'lowpass';
-        this.filterNode.frequency.value = 500;
+        this.filterNode.frequency.value = this.config.filterCutoff;
 
         this.sourceNode = this.audioContext.createMediaStreamSource(this.mediaStream);
         this.analyser = this.audioContext.createAnalyser();
@@ -33,7 +42,7 @@ const pitchDetector = {
         this.filterNode.connect(this.analyser);
 
         this.analyser.fftSize = 4096;
-        this.analyser.smoothingTimeConstant = 0.8;
+        this.analyser.smoothingTimeConstant = this.config.smoothing;
     },
 
     stop() {
@@ -59,6 +68,29 @@ const pitchDetector = {
         }
     },
 
+    // Set instrument mode to adjust detection parameters
+    setInstrumentMode(category, minFreq, maxFreq) {
+        const modes = {
+            'Guitar': { filterCutoff: 2000, smoothing: 0.75, sensitivityThreshold: 0.008 },
+            'Bass': { filterCutoff: 800, smoothing: 0.8, sensitivityThreshold: 0.012 },
+            'Piano': { filterCutoff: 6000, smoothing: 0.65, sensitivityThreshold: 0.005 },
+            'Strings': { filterCutoff: 3000, smoothing: 0.7, sensitivityThreshold: 0.008 },
+            'Drums': { filterCutoff: 500, smoothing: 0.85, sensitivityThreshold: 0.02 },
+            'Percussion': { filterCutoff: 600, smoothing: 0.8, sensitivityThreshold: 0.015 },
+            'Other': { filterCutoff: 4000, smoothing: 0.7, sensitivityThreshold: 0.01 }
+        };
+
+        const mode = modes[category] || modes['Other'];
+        this.config.filterCutoff = mode.filterCutoff;
+        this.config.smoothing = mode.smoothing;
+        this.config.sensitivityThreshold = mode.sensitivityThreshold;
+
+        // Update filter if already started
+        if (this.filterNode) {
+            this.filterNode.frequency.value = mode.filterCutoff;
+        }
+    },
+
     // Get pitch using autocorrelation on the raw waveform
     getPitch() {
         if (!this.analyser) return null;
@@ -77,7 +109,9 @@ const pitchDetector = {
         // Autocorrelation
         const correlation = this._autocorrelation(domainData, bufferLength);
 
-        if (correlation.rms < 0.01) return { frequency: null, note: null, cents: null, isDetected: false, rms: 0 };
+        if (correlation.rms < this.config.sensitivityThreshold) {
+            return { frequency: null, note: null, cents: null, isDetected: false, rms: 0 };
+        }
 
         const period = correlation.bestOffset + 1;
         const frequency = this.audioContext.sampleRate / period;
@@ -95,7 +129,9 @@ const pitchDetector = {
             frequency: Math.round(frequency * 10) / 10,
             note: noteName,
             cents: cents,
-            isDetected: correlation.rms > 0.015 && frequency >= 50 && frequency <= 2000,
+            isDetected: correlation.rms > this.config.sensitivityThreshold &&
+                        frequency >= this.config.minFreq &&
+                        frequency <= this.config.maxFreq,
             rms: correlation.rms
         };
     },
@@ -111,10 +147,10 @@ const pitchDetector = {
         }
         rms = Math.sqrt(rms / len);
 
-        // Minimum period: sample rate / max frequency (50 Hz)
-        const minOffset = Math.floor(this.audioContext.sampleRate / 2000);
-        // Maximum period: sample rate / min frequency (50 Hz)
-        const maxOffset = Math.floor(this.audioContext.sampleRate / 50);
+        // Minimum period: sample rate / max frequency
+        const minOffset = Math.floor(this.audioContext.sampleRate / this.config.maxFreq);
+        // Maximum period: sample rate / min frequency
+        const maxOffset = Math.floor(this.audioContext.sampleRate / this.config.minFreq);
 
         let correlationSum = 0;
         for (let i = 0; i < len; i++) {

@@ -7,15 +7,17 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Drum Tuner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>Instrument Tuner</title>
     <link rel="stylesheet" href="~/css/site.css" />
 </head>
 <body>
     <nav class="navbar">
-        <div class="nav-brand">🥁 Drum Tuner</div>
+        <div class="nav-brand">🎵 Tuner</div>
         <div class="nav-links">
-            <button class="nav-btn active" data-page="selector">Select Drum</button>
+            <button class="nav-btn active" data-page="selector">Instruments</button>
             <button class="nav-btn" data-page="journal">Journal</button>
         </div>
     </nav>
@@ -25,7 +27,6 @@
     </main>
 
     <script>
-        // Initialize AudioContext on first user gesture (required by browsers)
         document.addEventListener('click', function initAudioOnce() {
             if (!window.tonePlayer || !window.tonePlayer.initAudio) return;
             window.tonePlayer.initAudio();
@@ -35,7 +36,9 @@
 
     <script src="~/js/tone-player.js"></script>
     <script src="~/js/api-client.js"></script>
-    <script src="~/js/drum-selector.js"></script>
+    <script src="~/js/instrument-selector.js"></script>
+    <script src="~/js/string-visualizer.js"></script>
+    <script src="~/js/piano-visualizer.js"></script>
     <script src="~/js/note-selector.js"></script>
     <script src="~/js/tuning-guide.js"></script>
     <script src="~/js/journal.js"></script>

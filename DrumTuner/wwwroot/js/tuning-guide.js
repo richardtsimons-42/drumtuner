@@ -1,80 +1,77 @@
-// Tuning Guide Component
+// Tuning Guide — instrument-specific tuning information
 const tuningGuide = {
-    patterns: [
-        {
-            name: '4-Corner',
-            description: 'Classic tuning: 4 lugs at target note, opposite 4 lugs one step down. Great for a focused, punchy sound.',
-            lugColors: ['primary', 'secondary', 'primary', 'secondary', 'primary', 'secondary', 'primary', 'secondary']
-        },
-        {
-            name: 'Cross-Tuning',
-            description: 'Tune opposite lugs together in pairs. Creates a more musical, bell-like tone.',
-            lugColors: ['pair1', 'pair2', 'pair1', 'pair2', 'pair1', 'pair2', 'pair1', 'pair2']
-        },
-        {
-            name: 'All Same',
-            description: 'Every lug tuned to the same note. Simple, even tone — great for beginners.',
-            lugColors: ['all-same', 'all-same', 'all-same', 'all-same', 'all-same', 'all-same', 'all-same', 'all-same']
+    patterns: {
+        'Guitar': [
+            { name: 'Standard Tuning', notes: ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'], desc: 'Most common guitar tuning' },
+            { name: 'Drop D', notes: ['D2', 'A2', 'D3', 'G3', 'B3', 'E4'], desc: 'Lower the 6th string to D for power chords' },
+            { name: 'Open G', notes: ['D2', 'G2', 'D3', 'G3', 'B3', 'D4'], desc: 'Strum open strings for a G chord' },
+            { name: 'Open D', notes: ['D2', 'A2', 'D3', 'F#3', 'A3', 'D4'], desc: 'Strum open strings for a D chord' },
+            { name: 'Half-Step Down', notes: ['Eb2', 'Ab2', 'Db3', 'Gb3', 'Bb3', 'Eb4'], desc: 'All strings lowered by one semitone' },
+            { name: 'DADGAD', notes: ['D2', 'A2', 'D3', 'G3', 'A3', 'D4'], desc: 'Celtic/folk tuning with open D sound' }
+        ],
+        'Bass': [
+            { name: 'Standard 4-String', notes: ['E1', 'A1', 'D2', 'G2'], desc: 'Most common bass tuning' },
+            { name: 'Standard 5-String', notes: ['B0', 'E1', 'A1', 'D2', 'G2'], desc: 'Extended range with low B string' },
+            { name: 'Standard 6-String', notes: ['B0', 'E1', 'A1', 'D2', 'G2', 'C3'], desc: 'Wide range bass, two octaves of E' },
+            { name: 'Drop D Bass', notes: ['D1', 'A1', 'D2', 'G2'], desc: 'Lower the E string to D for heavier riffs' }
+        ],
+        'Strings': [
+            { name: 'Violin Standard', notes: ['G3', 'D4', 'A4', 'E5'], desc: 'Standard violin tuning, perfect fifths' },
+            { name: 'Viola Standard', notes: ['G3', 'D4', 'A4', 'E5'], desc: 'Same as violin but an octave lower' },
+            { name: 'Cello Standard', notes: ['G2', 'D3', 'A3', 'E4'], desc: 'Standard cello tuning, perfect fifths' },
+            { name: 'Double Bass Standard', notes: ['E1', 'A1', 'D2', 'G2'], desc: 'Same as bass guitar but larger instrument' }
+        ],
+        'Piano': [
+            { name: 'Concert Pitch (A440)', notes: ['A4'], desc: 'A4 = 440 Hz is the standard tuning reference' },
+            { name: 'Middle C', notes: ['C4'], desc: 'C4 = 261.63 Hz, located near center of keyboard' },
+            { name: 'Octave Reference', notes: ['C3', 'C4', 'C5', 'C6', 'C7'], desc: 'All C notes across the piano range' }
+        ],
+        'Drums': [
+            { name: 'Standard Snare', notes: ['D3'], desc: 'Common snare drum pitch, medium tension' },
+            { name: 'Low Tom Tuning', notes: ['C2', 'G1', 'C2'], desc: 'Toms tuned in descending intervals' },
+            { name: 'High Tom Tuning', notes: ['F3', 'C3', 'G2'], desc: 'Rack toms tuned higher for brighter sound' }
+        ],
+        'Percussion': [
+            { name: 'Timpani Ranges', notes: ['C2', 'G2', 'C3', 'G3'], desc: 'Common timpani tuning intervals' },
+            { name: 'Conga Tuning', notes: ['D3', 'A2'], desc: 'Tuned congas in a fifth interval' }
+        ],
+        'Other': [
+            { name: 'Ukulele Standard (GCEA)', notes: ['G4', 'C4', 'E4', 'A4'], desc: 'Most common ukulele tuning' },
+            { name: 'Banjo Open G', notes: ['G4', 'D3', 'G3', 'B3', 'D4'], desc: 'Standard banjo tuning for bluegrass' },
+            { name: 'Mandolin Standard', notes: ['G3', 'D4', 'G4', 'B4', 'E5'], desc: 'Pairs tuned in unison, like a violin but higher' },
+            { name: 'Dobro Open G', notes: ['G2', 'B2', 'D3', 'G3', 'B3', 'D4'], desc: 'Open G chord for slide guitar playing' }
+        ]
+    },
+
+    render(category) {
+        const cat = category || 'Other';
+        const patterns = this.patterns[cat] || this.patterns['Other'];
+
+        let html = `<h3>Tuning Guide — ${cat}</h3><div class="pattern-list">`;
+
+        for (const p of patterns) {
+            const notesHtml = p.notes.map(n => {
+                const hue = this.noteToHue(n);
+                return `<span class="tuning-note-badge" style="background:hsl(${hue},60%,40%)">${n}</span>`;
+            }).join('');
+
+            html += `
+                <div class="pattern-item">
+                    <h4>${p.name}</h4>
+                    <p>${p.desc}</p>
+                    <div class="pattern-diagram">${notesHtml}</div>
+                </div>`;
         }
-    ],
 
-    render() {
-        return `
-            <div class="guide-panel">
-                <h3>📖 Tuning Patterns</h3>
-                <div class="pattern-list">
-                    ${this.patterns.map((p, i) => `
-                        <div class="pattern-item">
-                            <h4>${p.name}</h4>
-                            <p>${p.description}</p>
-                            <div class="pattern-diagram">
-                                ${Array.from({length: 8}, (_, j) => {
-                                    const color = this.getColorClass(p.lugColors[j % p.lugColors.length]);
-                                    return `<div class="pattern-lug ${color}" onclick="tuningGuide.playLug(${j + 1})">${j + 1}</div>`;
-                                }).join('')}
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
+        html += '</div>';
+        return html;
     },
 
-    getColorClass(color) {
-        const map = {
-            'primary': 'highlight',
-            'secondary': '',
-            'pair1': 'highlight',
-            'pair2': '',
-            'all-same': 'highlight'
-        };
-        return map[color] || '';
-    },
-
-    async playLug(position) {
-        // Play a reference tone for the next lug in sequence
-        const currentLugs = drumVisualizer.lugs;
-        if (currentLugs && currentLugs[position - 1]) {
-            const note = currentLugs[position - 1].tunedNote || 'D3';
-            await tonePlayer.playNote(note);
-        } else {
-            await tonePlayer.playNote('D3');
-        }
-    },
-
-    show() {
-        // Insert guide below the drum visualizer
-        const container = document.querySelector('.drum-container');
-        if (container) {
-            const guideDiv = document.createElement('div');
-            guideDiv.id = 'guidePanel';
-            guideDiv.innerHTML = this.render();
-            container.after(guideDiv);
-        }
-    },
-
-    hide() {
-        const panel = document.getElementById('guidePanel');
-        if (panel) panel.remove();
+    noteToHue(note) {
+        const octave = parseInt(note.slice(-1));
+        const noteName = note.slice(0, -1).replace('#', '');
+        const semitones = { 'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11 };
+        const semi = semitones[noteName] || 0;
+        return ((octave - 1) * 12 + semi) * 360 / 48 % 360;
     }
 };

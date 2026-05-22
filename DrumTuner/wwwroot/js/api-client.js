@@ -1,7 +1,5 @@
 class ApiClient {
-    constructor() {
-        this.base = '';
-    }
+    constructor() { this.base = ''; }
 
     async get(url) {
         const resp = await fetch(`${this.base}${url}`);
@@ -29,37 +27,22 @@ class ApiClient {
         return resp.json();
     }
 
-    async getDrumTypes() {
-        return this.get('/api/drum-types');
-    }
+    // Drum types (legacy)
+    async getDrumTypes() { return this.get('/api/drum-types'); }
+    async instantiateDrum(drumTypeId) { return this.post(`/api/drum-types/${drumTypeId}/instantiate`, null); }
+    async updateLug(lugId, note) { return this.put(`/api/lugs/${lugId}`, { note }); }
 
-    async instantiateDrum(drumTypeId) {
-        return this.post(`/api/drum-types/${drumTypeId}/instantiate`, null);
-    }
+    // Instrument types
+    async getInstrumentTypes() { return this.get('/api/instruments'); }
+    async instantiateInstrument(instrumentTypeId) { return this.post(`/api/instruments/${instrumentTypeId}/instantiate`, null); }
+    async updateString(instrumentId, stringIndex, note) { return this.put(`/api/instruments/${instrumentId}/strings/${stringIndex}`, note); }
 
-    async getLugs(drumId) {
-        return this.get(`/api/lugs/drum/${drumId}`);
-    }
-
-    async updateLug(lugId, note) {
-        return this.put(`/api/lugs/${lugId}`, { note });
-    }
-
+    // Tuning sessions
     async saveSession(drumTypeId, lugRecords, notes = '') {
-        return this.post('/api/tuning-sessions', {
-            drumTypeId,
-            notes,
-            lugRecords
-        });
+        return this.post('/api/tuning-sessions', { drumTypeId, notes, lugRecords });
     }
-
-    async getSessions() {
-        return this.get('/api/tuning-sessions');
-    }
-
-    async getSession(id) {
-        return this.get(`/api/tuning-sessions/${id}`);
-    }
+    async getSessions() { return this.get('/api/tuning-sessions'); }
+    async getSession(id) { return this.get(`/api/tuning-sessions/${id}`); }
 }
 
 window.apiClient = new ApiClient();

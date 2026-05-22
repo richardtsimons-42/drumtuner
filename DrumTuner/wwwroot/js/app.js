@@ -1,32 +1,29 @@
-// Main App - Navigation & State Management
+// Main App — Navigation, State Management & Instrument Tuning
 const app = {
     currentPage: 'selector',
-    currentDrumId: null,
+    currentInstrumentId: null,
+    currentInstrumentTypeId: null,
+    currentCategory: null,
     isTuningMode: false,
     lastPitch: null,
 
     async init() {
         await tonePlayer.loadFrequencies();
-
-        // Set up nav buttons
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.onclick = () => this.navigate(btn.dataset.page);
         });
-
         this.navigate('selector');
     },
 
     navigate(page) {
         this.currentPage = page;
-
-        // Update nav active state
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         const activeBtn = document.querySelector(`.nav-btn[data-page="${page}"]`);
         if (activeBtn) activeBtn.classList.add('active');
 
         switch (page) {
             case 'selector':
-                drumSelector.init();
+                instrumentSelector.init();
                 break;
             case 'journal':
                 journal.init();
@@ -34,32 +31,55 @@ const app = {
         }
     },
 
-    async selectDrum(drumTypeId) {
-        const data = await apiClient.instantiateDrum(drumTypeId);
-        this.currentDrumId = data.id;
+    async selectInstrument(instrumentTypeId) {
+        const data = await apiClient.instantiateInstrument(instrumentTypeId);
+        this.currentInstrumentId = data.id;
+        this.currentInstrumentTypeId = instrumentTypeId;
+        this.currentCategory = data.category;
+        window.currentInstrument = data;
+        window.lugs = Array.from(data.defaultNotes).map((note, i) => ({
+            id: i + 1,
+            position: i + 1,
+            tunedNote: note
+        }));
 
-        // Load visualizer with the new drum's lugs
+        // Set pitch detector mode for this instrument category
+        pitchDetector.setInstrumentMode(data.category, data.minFrequency, data.maxFrequency);
+
+        // Build the view based on category
+        const isPiano = data.category === 'Piano';
+        const isStringed = ['Guitar', 'Bass', 'Strings', 'Other'].includes(data.category);
+
+        let visualizerHtml = '';
+        if (isPiano) {
+            pianoVisualizer.init(data.id, data.defaultNotes);
+            visualizerHtml = `<div id="pianoContainer">${pianoVisualizer.render()}</div>`;
+        } else if (isStringed) {
+            stringVisualizer.init(data.id, data.stringCount, data.defaultNotes);
+            visualizerHtml = stringVisualizer.render();
+        }
+
         document.getElementById('app').innerHTML = `
             <div class="visualizer-header">
                 <div class="visualizer-title">
                     <h2>${data.name}</h2>
-                    <p>${data.category} · ${data.lugs.length} lugs</p>
+                    <p>${data.category} · ${data.stringCount} strings</p>
                     <div class="lug-status">
                         <span class="status-dot untuned"></span>
-                        0/${data.lugs.length} tuned
+                        <span></span>
                     </div>
                     <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
                 </div>
                 <div class="visualizer-actions">
                     <button class="btn btn-primary" id="tuneBtn" onclick="app.toggleTuneMode()">🎤 Tune</button>
-                    <button class="btn btn-secondary" onclick="app.playReferenceTone()" title="Play reference tone for each lug">🔊 Play Tone</button>
+                    <button class="btn btn-secondary" onclick="app.playReferenceTone()" title="Play reference tone for each string">🔊 Play Tone</button>
                     <button class="btn btn-secondary" onclick="app.showGuide()">📖 Guide</button>
                     <button class="btn btn-secondary" onclick="app.saveSession()">💾 Save</button>
                     <button class="btn btn-secondary" onclick="app.goHome()">← Back</button>
                 </div>
             </div>
-            <div class="drum-container">
-                <canvas id="drumCanvas" width="400" height="400"></canvas>
+            <div class="instrument-container">
+                ${visualizerHtml}
                 <div id="tunerGauge" class="tuner-gauge" style="display:none">
                     <div class="tuner-status" id="tunerStatus">Listening...</div>
                     <div class="tuner-note" id="tunerNote">--</div>
@@ -69,136 +89,21 @@ const app = {
                     </div>
                     <div class="tuner-cents" id="tunerCents">-- ¢</div>
                 </div>
-            </div>
-        `;
-
-        // Store drum data globally for the visualizer
-        window.currentDrum = data;
-        window.lugs = Array.from(data.lugs);
-
-        this.drawDrum();
-    },
-
-    drawDrum() {
-        const canvas = document.getElementById('drumCanvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const cx = 200, cy = 200, r = 160;
-        const lugs = window.lugs;
-        const count = lugs.length;
-
-        ctx.clearRect(0, 0, 400, 400);
-
-        // Drum head
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.fillStyle = '#2a2a3e';
-        ctx.fill();
-        ctx.strokeStyle = '#0f3460';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        // Bearing edge ring
-        ctx.beginPath();
-        ctx.arc(cx, cy, r - 20, 0, Math.PI * 2);
-        ctx.strokeStyle = '#1a4a8a';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        // Draw lugs
-        lugs.forEach((lug, i) => {
-            const angle = (Math.PI * 2 * i) / count - Math.PI / 2;
-            const x = cx + (r - 10) * Math.cos(angle);
-            const y = cy + (r - 10) * Math.sin(angle);
-
-            ctx.beginPath();
-            ctx.arc(x, y, 18, 0, Math.PI * 2);
-            if (lug.tunedNote) {
-                const hue = this.noteToHue(lug.tunedNote);
-                ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
-            } else {
-                ctx.fillStyle = '#444';
-            }
-            ctx.fill();
-            ctx.strokeStyle = '#666';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // Lug number
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 12px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(lug.position, x, y);
-
-            // Tuned note label
-            if (lug.tunedNote) {
-                ctx.fillStyle = '#fff';
-                ctx.font = '9px sans-serif';
-                ctx.fillText(lug.tunedNote, x, y - 26);
-            }
-        });
-
-        // Click handler
-        canvas.onclick = async (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const mx = e.clientX - rect.left;
-            const my = e.clientY - rect.top;
-
-            for (const lug of lugs) {
-                const idx = lug.position - 1;
-                const angle = (Math.PI * 2 * idx) / count - Math.PI / 2;
-                const lx = cx + (r - 10) * Math.cos(angle);
-                const ly = cy + (r - 10) * Math.sin(angle);
-                const dist = Math.hypot(mx - lx, my - ly);
-
-                if (dist < 22) {
-                    if (app.isTuningMode && app.lastPitch && app.lastPitch.isDetected) {
-                        // In tuning mode: assign detected note to this lug
-                        lug.tunedNote = app.lastPitch.note;
-                        this.drawDrum();
-                    } else if (lug.tunedNote) {
-                        await tonePlayer.playNote(lug.tunedNote);
-                    } else {
-                        this.showNoteSelector(lug);
-                    }
-                }
-            }
-        };
+            </div>`;
 
         this.updateProgress();
     },
 
-    noteToHue(note) {
-        const octave = parseInt(note.slice(-1));
-        const noteName = note.slice(0, -1).replace('#', '');
-        const semitones = { 'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11 };
-        const semi = semitones[noteName] || 0;
-        return ((octave - 1) * 12 + semi) * 360 / 48 % 360;
-    },
-
-    showNoteSelector(lug) {
-        noteSelector.open(lug.tunedNote, async (note) => {
-            const updated = await apiClient.updateLug(lug.id, note);
-            lug.tunedNote = updated.tunedNote;
-            this.drawDrum();
-        });
-    },
-
     updateProgress() {
-        const lugs = window.lugs;
-        if (!lugs) return;
-        const tuned = lugs.filter(l => l.tunedNote).length;
-        const total = lugs.length;
+        const strings = stringVisualizer.getStrings();
+        if (!strings) return;
+        const tuned = strings.filter(s => s.currentNote !== null).length;
+        const total = strings.length;
         const pct = (tuned / total * 100);
 
-        const statusDot = document.querySelector('.status-dot');
         const statusText = document.querySelectorAll('.lug-status span')[1];
         const progressFill = document.querySelector('.progress-fill');
 
-        if (statusDot) {
-            statusDot.className = `status-dot ${tuned === total ? 'tuned' : 'untuned'}`;
-        }
         if (statusText) {
             statusText.textContent = `${tuned}/${total} tuned`;
         }
@@ -208,32 +113,34 @@ const app = {
     },
 
     showGuide() {
-        // Remove existing guide if present
         const existing = document.getElementById('guidePanel');
         if (existing) existing.remove();
 
         const guideDiv = document.createElement('div');
         guideDiv.id = 'guidePanel';
         guideDiv.className = 'guide-panel';
-        guideDiv.innerHTML = tuningGuide.render();
-        document.querySelector('.drum-container').after(guideDiv);
+        guideDiv.innerHTML = tuningGuide.render(this.currentCategory);
+        document.querySelector('.instrument-container').after(guideDiv);
     },
 
     async saveSession() {
         const notes = prompt('Add notes for this session (optional):');
         if (notes === null) return;
 
-        const records = window.lugs
-            .filter(l => l.tunedNote)
-            .map(l => ({ position: l.position, note: l.tunedNote }));
+        let records = [];
+        if (stringVisualizer.getInstrumentId()) {
+            records = stringVisualizer.getStrings().map(s => ({ position: s.index + 1, note: s.targetNote }));
+        } else if (window.lugs) {
+            records = window.lugs.filter(l => l.tunedNote).map(l => ({ position: l.position, note: l.tunedNote }));
+        }
 
         if (records.length === 0) {
-            alert('No lugs tuned yet!');
+            alert('No strings tuned yet!');
             return;
         }
 
         try {
-            await apiClient.saveSession(window.currentDrum.drumTypeId, records, notes);
+            await apiClient.saveSession(this.currentInstrumentTypeId, records, notes);
             alert('Session saved!');
         } catch (e) {
             alert('Failed to save: ' + e.message);
@@ -241,18 +148,13 @@ const app = {
     },
 
     async playReferenceTone() {
-        if (!window.lugs || window.lugs.length === 0) {
-            alert('No drum loaded!');
-            return;
-        }
+        if (!window.lugs || window.lugs.length === 0) return;
 
-        // Play each lug's note in sequence
         for (let i = 0; i < window.lugs.length; i++) {
             const lug = window.lugs[i];
             if (i > 0) await new Promise(r => setTimeout(r, 400));
-
             if (lug.tunedNote) {
-                await tonePlayer.playNote(lug.tunedNote, 0.6);
+                await tonePlayer.playNote(lug.tunedNote, 1.5);
             } else {
                 await tonePlayer.playSilence();
             }
@@ -286,10 +188,44 @@ const app = {
         const gauge = document.getElementById('tunerGauge');
         if (gauge) gauge.style.display = 'block';
 
-        // Start the pitch processing loop
         pitchDetector.listen((pitch) => {
             this.lastPitch = pitch;
+
+            // Update string visualizer
+            if (stringVisualizer.getInstrumentId()) {
+                stringVisualizer.updateFromPitch(pitch);
+                const container = document.getElementById('pianoContainer');
+                if (!container) {
+                    const svDiv = document.createElement('div');
+                    svDiv.id = 'stringContainer';
+                    svDiv.className = 'instrument-visualizer';
+                    document.querySelector('.instrument-container').appendChild(svDiv);
+                }
+                const sc = document.getElementById('stringContainer') || document.createElement('div');
+                if (!document.getElementById('stringContainer')) {
+                    const newSc = document.createElement('div');
+                    newSc.id = 'stringContainer';
+                    newSc.className = 'instrument-visualizer';
+                    document.querySelector('.instrument-container').appendChild(newSc);
+                }
+                // Re-render string visualizer in place
+                const existingSc = document.getElementById('stringContainer');
+                if (existingSc) {
+                    existingSc.innerHTML = stringVisualizer.render();
+                }
+            }
+
+            // Update piano visualizer
+            if (pianoVisualizer.getInstrumentId()) {
+                pianoVisualizer.updateFromPitch(pitch);
+                const pc = document.getElementById('pianoContainer');
+                if (pc) pc.innerHTML = pianoVisualizer.render();
+            } else {
+                pianoVisualizer.resetUndetected();
+            }
+
             this.updateTunerUI(pitch);
+            this.updateProgress();
         });
     },
 
@@ -309,6 +245,10 @@ const app = {
         if (gauge) gauge.style.display = 'none';
 
         this.lastPitch = null;
+
+        // Reset visualizers
+        stringVisualizer.resetPitch();
+        pianoVisualizer.resetUndetected();
     },
 
     updateTunerUI(pitch) {
@@ -319,7 +259,7 @@ const app = {
         const statusEl = document.getElementById('tunerStatus');
 
         if (!pitch || !pitch.isDetected) {
-            statusEl.textContent = 'No signal — hit the drum!';
+            statusEl.textContent = 'No signal — play a note!';
             noteEl.textContent = '--';
             freqEl.textContent = '-- Hz';
             centsEl.textContent = '-- ¢';
@@ -328,22 +268,20 @@ const app = {
             return;
         }
 
-        statusEl.textContent = `Lug: ${pitch.note} (${pitch.frequency} Hz)`;
+        statusEl.textContent = `Detected: ${pitch.note} (${pitch.frequency} Hz)`;
         noteEl.textContent = pitch.note;
         freqEl.textContent = `${pitch.frequency} Hz`;
 
-        // Cents display with color coding
         const absCents = Math.abs(pitch.cents);
         centsEl.textContent = `${pitch.cents > 0 ? '+' : ''}${pitch.cents} ¢`;
         if (absCents <= 5) {
-            centsEl.style.color = '#4ade80'; // green — in tune
+            centsEl.style.color = '#4ade80';
         } else if (absCents <= 20) {
-            centsEl.style.color = '#facc15'; // yellow — close
+            centsEl.style.color = '#facc15';
         } else {
-            centsEl.style.color = '#ef4444'; // red — far off
+            centsEl.style.color = '#ef4444';
         }
 
-        // Needle position: -50¢ = left edge, 0 = center, +50¢ = right edge
         if (needleEl) {
             const pct = Math.max(0, Math.min(100, 50 + pitch.cents));
             needleEl.style.left = `${pct}%`;
@@ -351,9 +289,9 @@ const app = {
     },
 
     goHome() {
+        if (this.isTuningMode) this.stopTuneMode();
         this.navigate('selector');
     }
 };
 
-// Initialize on page load
 document.addEventListener('DOMContentLoaded', () => app.init());
